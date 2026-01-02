@@ -2,121 +2,72 @@ import streamlit as st
 import random
 import time
 
-# --- CONFIGURACIÓN DE PÁGINA (ESTÉTICA DARK/MONSTER) ---
+# --- CONFIGURACIÓN ---
 st.set_page_config(page_title="TITAN PLANNER", page_icon="🦍", layout="centered")
 
+# CSS para ocultar elementos de Streamlit y dar look App Nativa
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #0e1117;
-        color: #fafafa;
-    }
-    h1 {
-        color: #ff4b4b !important;
-        text-transform: uppercase;
-        font-weight: 800;
-        text-align: center;
-    }
+    .stApp { background-color: #000000; color: #ffffff; }
+    h1 { color: #ff3333 !important; text-transform: uppercase; font-style: italic; }
     .stButton>button {
-        background-color: #ff4b4b;
-        color: white;
-        border-radius: 20px;
-        font-weight: bold;
-        width: 100%;
-        border: none;
-        padding: 15px;
-        transition: all 0.3s;
+        background-color: #ff3333; color: white; border: none;
+        border-radius: 5px; padding: 15px; font-weight: bold; width: 100%;
     }
-    .stButton>button:hover {
-        background-color: #ff1c1c;
-        transform: scale(1.02);
+    .exercise-title {
+        font-size: 22px; font-weight: bold; color: #ff3333; margin-top: 20px;
     }
-    .metric-card {
-        background-color: #262730;
-        padding: 20px;
-        border-radius: 15px;
-        border-left: 5px solid #ff4b4b;
-        margin-bottom: 10px;
-    }
+    .exercise-meta { color: #cccccc; font-size: 16px; margin-bottom: 10px; }
+    /* Ocultar menú de hamburguesa y footer para que parezca app real */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- BASE DE DATOS CON VIDEOS ---
-# Usamos videos cortos de Youtube para que cargue rápido.
+# --- DATOS (VIDEOS DE YOUTUBE) ---
 exercises_db = {
     "Pecho y Tríceps": [
-        {"name": "Flexiones Diamante", "reps": "12-15", "xp": 50, "video": "https://youtu.be/J0DnG1_S92I"},
-        {"name": "Fondos (Dips) en Silla/Banco", "reps": "10-12", "xp": 60, "video": "https://youtu.be/0326dy_-CzM"},
-        {"name": "Flexiones Explosivas", "reps": "8-10", "xp": 70, "video": "https://youtu.be/tWjBnT3p0Fk"},
-        {"name": "Flexiones Archer (o abiertas)", "reps": "8 por lado", "xp": 80, "video": "https://youtu.be/2NnSSO-d8do"},
+        {"name": "Flexiones Diamante", "reps": "3 series x 12", "video": "https://youtu.be/J0DnG1_S92I"},
+        {"name": "Fondos en Silla", "reps": "3 series x 10", "video": "https://youtu.be/0326dy_-CzM"},
+        {"name": "Flexiones Explosivas", "reps": "3 series x 8", "video": "https://youtu.be/tWjBnT3p0Fk"},
     ],
     "Espalda y Bíceps": [
-        {"name": "Dominadas (o Remo en puerta)", "reps": "6-10", "xp": 100, "video": "https://youtu.be/tQPLf327cKY"},
-        {"name": "Chin-ups (Bíceps)", "reps": "8-12", "xp": 90, "video": "https://youtu.be/brhRXlOhsAM"},
-        {"name": "Remo Invertido (Mesa)", "reps": "12-15", "xp": 50, "video": "https://youtu.be/t9nJ9c6O8d4"},
-        {"name": "Superman Hold", "reps": "45 seg", "xp": 40, "video": "https://youtu.be/cc6UVRS7PW4"},
+        {"name": "Dominadas / Remo Puerta", "reps": "3 series x Falla", "video": "https://youtu.be/tQPLf327cKY"},
+        {"name": "Chin-ups", "reps": "3 series x 8", "video": "https://youtu.be/brhRXlOhsAM"},
+        {"name": "Superman", "reps": "3 series x 40s", "video": "https://youtu.be/cc6UVRS7PW4"},
     ],
-    "Piernas de Acero": [
-        {"name": "Sentadilla Búlgara", "reps": "10 por pierna", "xp": 90, "video": "https://youtu.be/2C-uNgKwPLE"},
-        {"name": "Pistol Squat (Asistida)", "reps": "5 por pierna", "xp": 120, "video": "https://youtu.be/PZilDfGHhPc"},
-        {"name": "Zancadas con Salto", "reps": "20 totales", "xp": 70, "video": "https://youtu.be/1-XN95d-wCs"},
-        {"name": "Puente de Glúteo (1 pierna)", "reps": "15 por lado", "xp": 60, "video": "https://youtu.be/ovM3L68Q1K4"},
+    "Piernas": [
+        {"name": "Sentadilla Búlgara", "reps": "3 series x 10 c/u", "video": "https://youtu.be/2C-uNgKwPLE"},
+        {"name": "Zancadas Salto", "reps": "3 series x 20", "video": "https://youtu.be/1-XN95d-wCs"},
+        {"name": "Puente Glúteo", "reps": "3 series x 15", "video": "https://youtu.be/ovM3L68Q1K4"},
     ],
-    "Core & Cardio": [
-        {"name": "Burpees", "reps": "15", "xp": 80, "video": "https://youtu.be/auBLPXO8Fww"},
-        {"name": "Mountain Climbers", "reps": "40 seg", "xp": 50, "video": "https://youtu.be/zT-9L3CEcmk"},
-        {"name": "Plancha Comando", "reps": "12", "xp": 60, "video": "https://youtu.be/pSHjTRKQxqc"},
-        {"name": "Leg Raises", "reps": "15", "xp": 50, "video": "https://youtu.be/JB2oyawG9KI"},
+    "Cardio & Core": [
+        {"name": "Burpees", "reps": "15 repeticiones", "video": "https://youtu.be/auBLPXO8Fww"},
+        {"name": "Mountain Climbers", "reps": "45 segundos", "video": "https://youtu.be/zT-9L3CEcmk"},
+        {"name": "Plancha", "reps": "Aguntar 1 min", "video": "https://youtu.be/pSHjTRKQxqc"},
     ]
 }
 
-# --- INTERFAZ PRINCIPAL ---
-st.title("🦍 TITAN TRAINER")
-st.markdown("<h3 style='text-align: center; color: gray;'>DESATA TU POTENCIAL</h3>", unsafe_allow_html=True)
-st.divider()
+st.title("🦍 TITAN PLANNER")
+st.write("ENTRENAMIENTO GRATUITO DE ÉLITE")
 
-# Input
-col1, col2 = st.columns(2)
-with col1:
-    focus = st.selectbox("OBJETIVO DE HOY", list(exercises_db.keys()))
-with col2:
-    intensity = st.select_slider("NIVEL DE ENERGÍA", options=["Baja", "Media", "MODO BESTIA"], value="Media")
+# Selectores
+focus = st.selectbox("OBJETIVO DE HOY", list(exercises_db.keys()))
 
-multiplier = 0.8 if intensity == "Baja" else 1.5 if intensity == "MODO BESTIA" else 1
-
-# Generador
-if st.button("GENERAR RUTINA MONSTER ⚡"):
-    with st.spinner('Analizando biometría... Generando plan de ataque...'):
-        time.sleep(1.5)
+if st.button("GENERAR RUTINA ⚡"):
+    with st.spinner('Cargando sistema...'):
+        time.sleep(1)
     
-    st.success(f"PLAN ACTIVO: {focus.upper()}")
+    # Selecciona 3 ejercicios al azar
+    rutina = random.sample(exercises_db[focus], 3)
     
-    daily_routine = random.sample(exercises_db[focus], 3)
-    total_xp = 0
+    st.success(f"OBJETIVO: {focus.upper()}")
+    st.progress(100)
     
-    for i, ex in enumerate(daily_routine):
-        # Tarjeta del ejercicio
-        st.markdown(f"""
-        <div class="metric-card">
-            <h4>🔥 Ejercicio {i+1}: {ex['name']}</h4>
-            <p style="font-size: 18px; margin-bottom: 0;"><b>Objetivo:</b> {ex['reps']}</p>
-        </div>
-        """, unsafe_allow_html=True)
+    for ex in rutina:
+        st.markdown(f'<div class="exercise-title">{ex["name"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="exercise-meta">Objetivo: {ex["reps"]}</div>', unsafe_allow_html=True)
         
-        # VIDEO DESPLEGABLE (Aquí está la magia visual)
-        with st.expander(f"🎥 Ver cómo se hace: {ex['name']}"):
-            st.video(ex['video'])
-            
-        total_xp += ex['xp']
-    
-    final_xp = int(total_xp * multiplier)
-    st.markdown("---")
-    st.metric(label="XP POTENCIAL", value=f"+{final_xp} XP", delta="Rango: Bestia")
-    st.info("💡 Tip: Descansa 90 segundos entre series. Repite el circuito 3 o 4 veces.")
-
-else:
-    st.markdown("""
-    <div style="text-align: center; margin-top: 50px; opacity: 0.6;">
-        Seleccioná tu objetivo y presioná el botón para recibir órdenes.
-    </div>
-    """, unsafe_allow_html=True)
+        # VIDEO DIRECTO (Sin clicks, aparece grande)
+        st.video(ex["video"])
+        st.markdown("---")
